@@ -1,4 +1,3 @@
-'use client'
 import Image from "next/image";
 import { Geist, Geist_Mono } from "next/font/google";
 import React from "react";
@@ -9,9 +8,7 @@ import NewsLetter from "@/components/NewsLetter";
 import FeaturedProduct from "@/components/FeaturedProduct";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-
-
-
+import { getHomeProducts } from "@/helpers/api-utils";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,13 +20,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const Home = () => {
+export default function Home({ products }) {
   return (
     <>
-      <Navbar/>
+      <Navbar />
       <div className="px-6 md:px-16 lg:px-32">
         <HeaderSlider />
-        <HomeProducts />
+        <HomeProducts products={products} />
         <FeaturedProduct />
         <Banner />
         <NewsLetter />
@@ -37,6 +34,14 @@ const Home = () => {
       <Footer />
     </>
   );
-};
+}
 
-export default Home;
+
+export async function getStaticProps() {
+  const products = await getHomeProducts();
+
+  return {
+    props: { products },
+    revalidate: 60,
+  };
+}

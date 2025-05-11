@@ -1,5 +1,6 @@
 import axios from "axios";
-
+import { connectToDatabase } from "@/lib/db";
+import Product from "@/models/Product";
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 // ✅ SSR-friendly fetch for all users
@@ -27,3 +28,21 @@ export async function updateUserAction(id, action) {
     };
   }
 }
+
+
+// Get top 10 products
+export async function getHomeProducts(limit = 10) {
+  await connectToDatabase();
+  const products = await Product.find({}).sort({ createdAt: -1 }).limit(limit).lean();
+   console.log("Fetched products:", products);
+  return JSON.parse(JSON.stringify(products));
+}
+
+// Get all products
+export async function getAllProducts() {
+  await connectToDB();
+  const products = await Product.find({}).lean();
+  console.log("Products:", products);
+  return JSON.parse(JSON.stringify(products));
+}
+
