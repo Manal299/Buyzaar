@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  images: {
-    domains: ['readymadeui.com'], // ✅ Add any external domains here
-  },
+  reactStrictMode: true,
 };
 
 export default nextConfig;

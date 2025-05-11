@@ -11,8 +11,9 @@ export default function LoginPage() {
       <div className="min-h-screen bg-white text-gray-900 flex items-center justify-center px-4">
         <div className="w-full max-w-5xl">
           {/* Buyzaar Heading */}
+          <Link href="/">
           <h1 className="text-3xl font-bold text-center mb-3">Buyzaar</h1>
-
+            </Link>
           {/* Login Card */}
           <div className="flex w-full shadow-lg rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
             {/* Left: Login Form */}
