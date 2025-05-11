@@ -1,0 +1,23 @@
+{
+  "storeName": "Example Store",
+  "description": "Your one-stop shop for quality products",
+  "logoUrl": "/path/to/logo.jpg",
+  "payment": {
+    "method": "Bank Transfer",
+    "details": "Account: 123456789, Bank: Example Bank"
+  },
+  "contact": {
+    "email": "contact@example.com",
+    "phone": "+1 (555) 123-4567",
+    "address": "123 Main St, City, Country",
+    "hours": [
+      {"day": "Monday - Friday", "time": "9:00 AM - 6:00 PM"},
+      {"day": "Saturday", "time": "10:00 AM - 4:00 PM"},
+      {"day": "Sunday", "time": "Closed"}
+    ],
+    "social": [
+      {"name": "Facebook", "url": "#", "icon": "<FacebookIcon/>"},
+      {"name": "Instagram", "url": "#", "icon": "<InstagramIcon/>"}
+    ]
+  }
+}
