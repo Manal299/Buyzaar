@@ -1,7 +1,42 @@
+"use client";
 import Head from "next/head";
 import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/router";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError('');
+
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error || 'Login failed');
+      setSubmitting(false);
+      return;
+    }
+
+    const role = data.user.role;
+    if (role === 'seller') {
+      router.push('/seller/dashboard');
+    } else {
+      router.push('/');
+    }
+  }
+
   return (
     <>
       <Head>
@@ -12,8 +47,9 @@ export default function LoginPage() {
         <div className="w-full max-w-5xl">
           {/* Buyzaar Heading */}
           <Link href="/">
-          <h1 className="text-3xl font-bold text-center mb-3">Buyzaar</h1>
-            </Link>
+            <h1 className="text-3xl font-bold text-center mb-3">Buyzaar</h1>
+          </Link>
+
           {/* Login Card */}
           <div className="flex w-full shadow-lg rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
             {/* Left: Login Form */}
@@ -24,13 +60,16 @@ export default function LoginPage() {
                 <Link href="/signup" className="text-blue-600 hover:underline">Signup</Link>
               </p>
 
-              <form className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
                   <label className="block mb-1 text-sm font-medium">Email</label>
                   <input
                     type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@company.com"
                     className="w-full px-4 py-2 rounded-lg bg-white border border-gray-300 focus:outline-none focus:ring focus:ring-blue-300"
+                    required
                   />
                 </div>
 
@@ -38,8 +77,11 @@ export default function LoginPage() {
                   <label className="block mb-1 text-sm font-medium">Password</label>
                   <input
                     type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     className="w-full px-4 py-2 rounded-lg bg-white border border-gray-300 focus:outline-none focus:ring focus:ring-blue-300"
+                    required
                   />
                 </div>
 
@@ -51,11 +93,14 @@ export default function LoginPage() {
                   <a href="#" className="text-blue-600 hover:underline">Forgot password?</a>
                 </div>
 
+                {error && <p className="text-red-600 text-sm">{error}</p>}
+
                 <button
                   type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition"
+                  disabled={submitting}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition disabled:opacity-50"
                 >
-                  Sign in to your account
+                  {submitting ? 'Signing in…' : 'Sign in to your account'}
                 </button>
               </form>
 

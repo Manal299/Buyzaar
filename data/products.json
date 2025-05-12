@@ -1,5 +1,14 @@
 [
   {
+    "id": "f347ab59-13f0-4944-ab2c-ea5c1c9e9539",
+    "sellerId": "demo-seller",
+    "title": "Bag",
+    "price": 20,
+    "stock": 10,
+    "createdAt": "2025-05-12T02:50:17.517Z",
+    "updatedAt": "2025-05-12T02:50:17.517Z"
+  },
+  {
     "id": "e5c2de2f-c230-4a9a-bf89-bf2c32837730",
     "sellerId": "demo-seller",
     "title": "pants",
