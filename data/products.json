@@ -1,0 +1,32 @@
+[
+  {
+    "id": "e5c2de2f-c230-4a9a-bf89-bf2c32837730",
+    "sellerId": "demo-seller",
+    "title": "pants",
+    "price": 20,
+    "stock": 4576,
+    "imageUrl": "https://www.bing.com/images/search?view=detailV2&ccid=5Nctii4U&id=CD487ECF6C0AAE2E5CCDD79658D0C3BBF8381C79&thid=OIP.5Nctii4USwkihUr9DGG0NAHaJ4&mediaurl=https%3A%2F%2Foldnavy.gap.com%2Fwebcontent%2F0015%2F181%2F107%2Fcn15181107.jpg&cdnurl=https%3A%2F%2Fth.bing.com%2Fth%2Fid%2FR.e4d72d8a2e144b0922854afd0c61b434%3Frik%3DeRw4%252bLvD0FiW1w%26pid%3DImgRaw%26r%3D0&exph=2000&expw=1500&q=pants&simid=608029703631933858&form=IRPRST&ck=B87C1E920F9310427C6171D0A508F07B&selectedindex=0&itb=0&cw=1375&ch=664&ajaxhist=0&ajaxserp=0&vt=0&sim=11",
+    "createdAt": "2025-05-10T22:00:43.736Z",
+    "updatedAt": "2025-05-10T22:00:43.736Z"
+  },
+  {
+    "id": "prod-1",
+    "sellerId": "demo-seller",
+    "title": "Cool T-Shirt",
+    "price": 19.99,
+    "stock": 10,
+    "imageUrl": "https://via.placeholder.com/80",
+    "createdAt": "2025-05-01T10:00:00.000Z",
+    "updatedAt": "2025-05-01T10:00:00.000Z"
+  },
+  {
+    "id": "prod-2",
+    "sellerId": "demo-seller",
+    "title": "Stylish Hat",
+    "price": 9.99,
+    "stock": 25,
+    "imageUrl": "https://via.placeholder.com/80",
+    "createdAt": "2025-05-02T11:15:00.000Z",
+    "updatedAt": "2025-05-02T11:15:00.000Z"
+  }
+]

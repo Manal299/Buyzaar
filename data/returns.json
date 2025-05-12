@@ -1,0 +1,28 @@
+{
+  "returns": [
+    {
+      "id": 1,
+      "orderId": "ORD-1001",
+      "date": "2023-11-15",
+      "reason": "Product was damaged on arrival",
+      "status": "approved",
+      "hasProof": true
+    },
+    {
+      "id": 2,
+      "orderId": "ORD-1002",
+      "date": "2023-11-14",
+      "reason": "Received the wrong item",
+      "status": "rejected",
+      "hasProof": true
+    },
+    {
+      "id": 3,
+      "orderId": "ORD-1003",
+      "date": "2023-11-13",
+      "reason": "The item doesn't match the description",
+      "status": "pending",
+      "hasProof": false
+    }
+  ]
+}
