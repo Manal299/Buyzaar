@@ -1,24 +1,64 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
-const orderSchema = new mongoose.Schema({
-  buyerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  items: [{
-    productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
-    quantity: Number,
-    price: Number
-  }],
-  totalAmount: Number,
-  status: { type: String, enum: ["pending", "processing", "shipped", "delivered", "cancelled"], default: "pending" },
-  paymentMethod: { type: String, enum: ["COD", "Card", "PayPal"], default: "COD" },
-  paymentStatus: { type: String, enum: ["paid", "unpaid"], default: "unpaid" },
-  shippingAddress: {
-    name: String,
-    phone: String,
-    address: String,
-    city: String,
-    postalCode: String,
-    country: String
+const OrderItemSchema = new mongoose.Schema({
+  productId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Product',
+    required: true
+  },
+  quantity: {
+    type: Number,
+    required: true,
+    min: 1
+  },
+  price: {
+    type: Number,
+    required: true
   }
-}, { timestamps: true });
+}, { _id: false });
 
-export default mongoose.models.Order || mongoose.model("Order", orderSchema);
+const OrderSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  sellerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Seller',
+    required: true
+  },
+  items: [OrderItemSchema],
+  total: {
+    type: Number,
+    required: true
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
+    default: 'pending'
+  },
+  shippingAddress: {
+    type: String,
+    required: true
+  },
+  paymentMethod: {
+    type: String,
+    required: true
+  },
+  paymentStatus: {
+    type: String,
+    enum: ['pending', 'paid', 'failed', 'refunded'],
+    default: 'pending'
+  }
+}, {
+  timestamps: true
+});
+
+// Create indexes for better performance
+OrderSchema.index({ userId: 1 });
+OrderSchema.index({ sellerId: 1 });
+OrderSchema.index({ status: 1 });
+OrderSchema.index({ createdAt: -1 });
+
+export default mongoose.models.Order || mongoose.model('Order', OrderSchema);

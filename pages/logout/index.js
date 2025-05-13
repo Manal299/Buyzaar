@@ -1,26 +1,27 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
+import { useRouter } from "next/router";
 
 export default function LogoutPage() {
+  const { data: session, status } = useSession();
   const router = useRouter();
 
   useEffect(() => {
-    // Clear local/session storage or cookies
-    localStorage.removeItem("user");       // if using localStorage
-    sessionStorage.removeItem("user");     // if using sessionStorage
-    document.cookie = "token=; Max-Age=0; path=/"; // if using cookies
-
-    // Optional: call backend logout endpoint if needed
-
-    // Redirect to home or login
-    router.push("/");
-  }, [router]);
+    if (status !== 'loading') {
+      signOut({ redirect: false }).then(() => {
+        router.push('/');
+      });
+    }
+  }, [router, status]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <p className="text-lg text-gray-600">Logging you out...</p>
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-600 mx-auto mb-4"></div>
+        <p>Logging out...</p>
+      </div>
     </div>
   );
 }

@@ -1,46 +1,106 @@
 "use client";
 import Head from "next/head";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import { signIn, useSession } from "next-auth/react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Get error from URL if redirected from NextAuth
+  useEffect(() => {
+    if (router.query.error) {
+      setError(
+        router.query.error === 'CredentialsSignin'
+          ? 'Invalid email or password'
+          : router.query.error
+      );
+    }
+  }, [router.query]);
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      if (session.user.role === 'seller' && session.user.status === 'pending') {
+        // Show a notification for pending status
+        alert('Your request is pending. Please wait for approval.');
+        return; // Prevent further redirection
+      }
+      
+      let redirectPath;
+      if (session.user.role === 'seller') {
+        // Redirect to seller's dashboard by ID
+        fetchSellerIdAndRedirect();
+      } else if (session.user.role === 'admin') {
+        redirectPath = '/admin/dashboard';
+        window.location.href = redirectPath;
+      } else {
+        redirectPath = '/';
+        window.location.href = redirectPath;
+      }
+    }
+  }, [session, status, router]);
+
+  // Add this function to fetch the seller ID and redirect
+  const fetchSellerIdAndRedirect = async () => {
+    try {
+      const response = await fetch('/api/auth/me');
+      const data = await response.json();
+      
+      if (data.success && data.user.id) {
+        window.location.href = `/seller/${data.user.id}/dashboard`;
+      } else {
+        console.error('Failed to fetch user ID:', data.error);
+        window.location.href = '/';
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      window.location.href = '/';
+    }
+  };
 
   async function handleSubmit(e) {
     e.preventDefault();
     setSubmitting(true);
     setError('');
 
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const result = await signIn('credentials', {
+        redirect: false,
+        email,
+        password
+      });
 
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error || 'Login failed');
+      if (result.error) {
+        setError(result.error || 'Login failed');
+      } 
+      // Don't redirect here - the useEffect will handle it once session updates
+    } catch (err) {
+      setError('An error occurred. Please try again.');
+    } finally {
       setSubmitting(false);
-      return;
-    }
-
-    const role = data.user.role;
-    if (role === 'seller') {
-      router.push('/seller/dashboard');
-    } else {
-      router.push('/');
     }
   }
 
+  // Show loading while checking auth status
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // Show login form if not authenticated
   return (
     <>
       <Head>
-        <title>Login | QuickCart</title>
+        <title>Login | Buyzaar</title>
       </Head>
 
       <div className="min-h-screen bg-white text-gray-900 flex items-center justify-center px-4">
@@ -56,7 +116,7 @@ export default function LoginPage() {
             <div className="w-full md:w-1/2 p-10">
               <h2 className="text-3xl font-bold mb-2">Welcome back</h2>
               <p className="text-sm mb-6 text-gray-600">
-                Start your website in seconds. Don’t have an account?{" "}
+                Start your website in seconds. Don't have an account?{" "}
                 <Link href="/signup" className="text-blue-600 hover:underline">Signup</Link>
               </p>
 
@@ -111,7 +171,10 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-3">
-                <button className="w-full flex items-center justify-center gap-2 border border-gray-300 bg-white text-gray-700 py-2 rounded-lg hover:bg-gray-50">
+                <button 
+                  onClick={() => signIn('google')}
+                  className="w-full flex items-center justify-center gap-2 border border-gray-300 bg-white text-gray-700 py-2 rounded-lg hover:bg-gray-50"
+                >
                   <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5" />
                   Sign in with Google
                 </button>
@@ -132,3 +195,4 @@ export default function LoginPage() {
     </>
   );
 }
+

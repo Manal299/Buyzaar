@@ -1,29 +1,72 @@
-import { connectToDatabase } from '@/lib/mongoose';
-import User from '@/models/User';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import connectToDatabase from '../../../lib/mongoose';
+import User from '../../../models/User';
+import { createToken, setTokenCookie } from '../../../lib/auth';
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).end('Method Not Allowed');
-
+  // Only allow POST method for login
+  if (req.method !== 'POST') {
+    return res.status(405).json({ success: false, error: 'Method not allowed' });
+  }
+  
+  // Connect to database
+  await connectToDatabase();
+  
   try {
-    await connectToDatabase();
     const { email, password } = req.body;
-
-    const user = await User.findOne({ email });
-    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
-
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
-
-    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
-      expiresIn: '7d'
+    
+    // Validate required fields
+    if (!email || !password) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Please provide email and password'
+      });
+    }
+    
+    // Find user by email and explicitly select password field
+    const user = await User.findOne({ email }).select('+password');
+    
+    // Check if user exists
+    if (!user) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Invalid credentials'
+      });
+    }
+    
+    // Verify password
+    const isPasswordValid = await user.matchPassword(password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Invalid credentials'
+      });
+    }
+    
+    // Generate token
+    const token = createToken(user);
+    
+    // Set token in cookie
+    setTokenCookie(res, token);
+    
+    // Return user without password
+    const userWithoutPassword = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt
+    };
+    
+    return res.status(200).json({
+      success: true,
+      token,
+      user: userWithoutPassword
     });
-
-    res.setHeader('Set-Cookie', `token=${token}; HttpOnly; Path=/; Max-Age=604800`);
-    return res.status(200).json({ message: 'Logged in successfully', user: { id: user._id, role: user.role } });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    return res.status(500).json({ 
+      success: false, 
+      error: 'Server error during login'
+    });
   }
-}
+} 

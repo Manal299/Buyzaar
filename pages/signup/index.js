@@ -2,16 +2,19 @@
 
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { signIn, useSession } from "next-auth/react";
+import Link from "next/link";
 import {
   CheckCircleIcon,
   XCircleIcon,
   EyeIcon,
   EyeSlashIcon,
-} from "@heroicons/react/20/solid";
+} from "@heroicons/react/24/solid";
 
 export default function SignupPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
 
   const [form, setForm] = useState({
     name: "",
@@ -26,6 +29,27 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (status === 'authenticated') {
+      // Simple, direct redirection logic based on user role and onboarding status
+      let redirectPath;
+      
+      if (session.user.role === 'seller') {
+        redirectPath = session.user.isOnboarded ? '/seller/dashboard' : '/seller/onboarding';
+      } else if (session.user.role === 'admin') {
+        redirectPath = '/admin/dashboard';
+      } else {
+        redirectPath = '/';
+      }
+      
+      console.log('User already authenticated, redirecting to:', redirectPath);
+      
+      // Use window.location for a hard redirect to avoid Next.js data fetching issues
+      window.location.href = redirectPath;
+    }
+  }, [session, status, router]);
+
   const isPasswordValid =
     form.password.length >= 6 && form.password === form.confirmPassword;
 
@@ -39,36 +63,71 @@ export default function SignupPage() {
     setSubmitting(true);
 
     try {
-      const res = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+      // Register the new user
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          password: form.password,
+          role: form.role
+        }),
       });
-
+      
       const data = await res.json();
+      
       if (!res.ok) {
-        setError(data.error || "Signup failed");
-        setSubmitting(false);
-        return;
+        throw new Error(data.error || 'Signup failed');
       }
-
-      router.push("/login");
+      
+      // Now sign in the user with the same credentials
+      const signInResult = await signIn('credentials', {
+        redirect: false,
+        email: form.email,
+        password: form.password
+      });
+      
+      if (signInResult.error) {
+        throw new Error(signInResult.error || 'Login after signup failed');
+      }
+      
+      // Use window.location for a hard redirect
+      // Specific redirect for each role
+      if (form.role === 'seller') {
+        window.location.href = '/seller/onboarding';
+      } else {
+        window.location.href = '/';
+      }
+      
     } catch (err) {
       console.error("Signup error:", err);
-      setError("Something went wrong. Please try again.");
+      setError(err.message || "Something went wrong. Please try again.");
+    } finally {
       setSubmitting(false);
     }
   };
 
+  // Show loading while checking auth status
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <>
       <Head>
-        <title>Sign Up | QuickCart</title>
+        <title>Sign Up | Buyzaar</title>
       </Head>
 
       <div className="min-h-screen bg-white text-gray-900 flex items-center justify-center px-4">
         <div className="w-full max-w-5xl">
-          <h1 className="text-3xl font-bold text-center mb-3">Buyzaar</h1>
+          <Link href="/">
+            <h1 className="text-3xl font-bold text-center mb-3">Buyzaar</h1>
+          </Link>
 
           <div className="flex w-full shadow-lg rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
             {/* Signup Form */}
@@ -76,9 +135,9 @@ export default function SignupPage() {
               <h2 className="text-3xl font-bold mb-2">Create an account</h2>
               <p className="text-sm mb-6 text-gray-600">
                 Already have an account?{" "}
-                <a href="/login" className="text-blue-600 hover:underline">
+                <Link href="/login" className="text-blue-600 hover:underline">
                   Login
-                </a>
+                </Link>
                 .
               </p>
 
@@ -194,7 +253,10 @@ export default function SignupPage() {
               </div>
 
               <div className="space-y-3">
-                <button className="w-full flex items-center justify-center gap-2 border border-gray-300 bg-white text-gray-700 py-2 rounded-lg hover:bg-gray-50">
+                <button 
+                  onClick={() => signIn('google')}
+                  className="w-full flex items-center justify-center gap-2 border border-gray-300 bg-white text-gray-700 py-2 rounded-lg hover:bg-gray-50"
+                >
                   <img
                     src="https://www.svgrepo.com/show/475656/google-color.svg"
                     alt="Google"
