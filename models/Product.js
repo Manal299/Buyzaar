@@ -55,6 +55,11 @@ const ProductSchema = new mongoose.Schema({
     min: [0, 'Stock cannot be negative'],
     default: 1
   },
+  status: {
+  type: String,
+  enum: ['pending', 'approved', 'rejected'],
+  default: 'pending',
+},
   inventory: {
     type: Number,
     default: 0,

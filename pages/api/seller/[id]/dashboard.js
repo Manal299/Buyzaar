@@ -1,96 +1,90 @@
-import connectToDatabase from '../../../../lib/mongoose';
-import Seller from '../../../../models/Seller';
-import Order from '../../../../models/Order';
-import Product from '../../../../models/Product';
+import connectToDatabase from '@/lib/mongoose';
+import User from '@/models/User';
+import Order from '@/models/Order';
+import Product from '@/models/Product';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../auth/[...nextauth]';
 
 export default async function handler(req, res) {
-  const { id } = req.query;
-
   try {
-    // Verify authentication
     const session = await getServerSession(req, res, authOptions);
-    
-    if (!session) {
-      return res.status(401).json({ success: false, error: 'Not authenticated' });
-    }
-    
-    // Check authorization (must be the seller or an admin)
-    if (session.user.role !== 'admin' && session.user.id !== id) {
-      return res.status(403).json({ success: false, error: 'Not authorized' });
-    }
-    
-    await connectToDatabase();
-    
-    // Fetch seller information
-    const seller = await Seller.findOne({ userId: id });
-    
-    if (!seller) {
-      return res.status(404).json({ success: false, error: 'Seller not found' });
-    }
-    
-    // Calculate stats
-    const stats = await calculateDashboardStats(seller._id);
-    
-    return res.status(200).json({
-      success: true,
-      seller,
-      stats
-    });
-  } catch (error) {
-    console.error('Error fetching dashboard data:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
-  }
-}
 
-async function calculateDashboardStats(sellerId) {
-  try {
-    // Calculate total revenue and order count
-    const orders = await Order.find({ sellerId }).sort({ createdAt: -1 });
+    // ✅ Only logged-in sellers can access
+    if (!session || session.user.role !== 'seller') {
+      return res.status(403).json({ success: false, error: 'Access denied' });
+    }
+
+    await connectToDatabase();
+
+    const userId = session.user.id;
+
+    // ✅ Get recent orders for this seller
+    const orders = await Order.find({ sellerId: userId }).sort({ createdAt: -1 });
     const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
     const orderCount = orders.length;
-    
-    // Get recent orders with limited data
-    const recentOrders = await Order.find({ sellerId })
+
+    const recentOrders = await Order.find({ sellerId: userId })
       .sort({ createdAt: -1 })
       .limit(5)
       .populate('userId', 'name')
       .lean();
-    
-    // Format recent orders for display
-    const formattedRecentOrders = recentOrders.map(order => ({
+
+    const formattedOrders = recentOrders.map(order => ({
       _id: order._id.toString(),
-      createdAt: order.createdAt,
       total: order.total,
       status: order.status,
-      customerName: order.userId ? order.userId.name : 'Unknown Customer'
+      createdAt: order.createdAt,
+      customerName: order.userId?.name || 'Unknown'
     }));
-    
-    // Get product stats
-    const products = await Product.find({ sellerId }).sort({ createdAt: -1 });
+
+    // ✅ Get seller products
+    const products = await Product.find({ sellerId: userId }).sort({ createdAt: -1 });
     const productCount = products.length;
-    
-    // Get recent products
-    const recentProducts = await Product.find({ sellerId })
+
+    const recentProducts = await Product.find({ sellerId: userId })
       .sort({ createdAt: -1 })
       .limit(6)
       .lean();
-    
-    // Get store rating
-    const seller = await Seller.findById(sellerId);
-    const storeRating = seller.storeRating || 0;
-    
-    return {
-      totalRevenue,
-      orderCount,
-      productCount,
-      recentOrders: formattedRecentOrders,
-      recentProducts,
-      storeRating
+
+    // 📊 Sales Chart Data
+    const getLast7Days = () => {
+      const days = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        days.push(d.toISOString().split("T")[0]); // Format: "YYYY-MM-DD"
+      }
+      return days;
     };
+
+    const revenueByDay = {};
+    orders.forEach(order => {
+      const date = new Date(order.createdAt).toISOString().split("T")[0];
+      revenueByDay[date] = (revenueByDay[date] || 0) + order.total;
+    });
+
+    const salesData = getLast7Days().map(date => ({
+      _id: date,
+      revenue: revenueByDay[date] || 0
+    }));
+
+    return res.status(200).json({
+      success: true,
+      seller: {
+        storeName: session.user.sellerInfo?.storeName || "Your Store"
+      },
+      stats: {
+        totalRevenue,
+        orderCount,
+        productCount,
+        recentOrders: formattedOrders,
+        recentProducts,
+        storeRating: session.user.sellerInfo?.storeRating || 0
+      },
+      salesData
+    });
   } catch (error) {
-    console.error('Error calculating dashboard stats:', error);
-    throw error;
+    console.error('Dashboard API error:', error);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
   }
-} 
+}

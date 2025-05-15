@@ -1,88 +1,105 @@
+
 "use client";
-import Link from "next/link";
-import useSWR from "swr";
-import {
-  ResponsiveContainer,
-  LineChart,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Line,
-  CartesianGrid
-} from "recharts";
 
-const fetcher = url =>
-  fetch(url, { headers: { "x-seller-id": "demo-seller" } })
-    .then(res => res.json());
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import { useSession } from "next-auth/react";
+import SellerSidebar from "@/components/seller/SellerSidebar";
+import SellerFooter from "@/components/seller/SellerFooter";
+import DashboardMain from "@/components/seller/DashboardMain";
+import SellerHeader from "@/components/seller/SellerHeader";
 
-export default function DashboardPage() {
-  const { data, error } = useSWR("/api/seller/dashboard", fetcher);
- 
-  if (error) return <p className="p-6 text-red-500">Failed to load dashboard.</p>;
-  if (!data)   return <p className="p-6">Loading dashboard…</p>;
-  console.log("data", data);
-  const { ordersCount, productsCount, earnings, salesData } = data;
-  const sales7d = salesData.reduce((sum, p) => sum + p.count, 0);
+export default function SellerDashboardPage() {
+  const router = useRouter();
+  const { data: session, status } = useSession({ required: true });
+  const { id } = router.query;
+  console.log("Seller ID:", id);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const cards = [
-    {
-      label: "Total Earnings",
-      value: `$${earnings.toFixed(2)}`,
-      bg: "from-green-400 to-green-600",
-    },
-    {
-      label: "Total Orders",
-      value: ordersCount,
-      bg: "from-blue-400 to-blue-600",
-    },
-    {
-      label: "Total Products",
-      value: productsCount,
-      bg: "from-purple-400 to-purple-600",
-    },
-    {
-      label: "Sales (7d)",
-      value: sales7d,
-      bg: "from-yellow-400 to-yellow-600",
-    },
-  ];
+  
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setSidebarOpen(false);
+      } else {
+        setSidebarOpen(true);
+      }
+    };
+    handleResize(); 
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (status === "authenticated" && id) {
+      fetchDashboardData();
+    }
+  }, [status, id]);
+
+  const fetchDashboardData = async () => {
+    try {
+      const response = await fetch(`/api/seller/${id}/dashboard`);
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || "Failed to load dashboard");
+      setDashboardData(data);
+      setError(null);
+    } catch (err) {
+      setError(err.message || "Dashboard loading failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (status === "loading" || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center text-red-500">
+        {error}
+        <button
+          onClick={fetchDashboardData}
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 space-y-8">
-      {/* Breadcrumb */}
-      <nav className="text-sm text-gray-600">
-        <Link href="/seller/dashboard" className="font-semibold text-gray-800">Dashboard</Link>
-        <span className="mx-2">&raquo;</span> Home
-      </nav>
+    <div className="flex min-h-screen">
+     
+      <SellerSidebar user={session?.user} isOpen={sidebarOpen} />
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {cards.map(({ label, value, bg }) => (
-          <div
-            key={label}
-            className={`bg-gradient-to-br ${bg} text-white p-6 rounded-2xl shadow-lg flex flex-col justify-between`}
-          >
-            <p className="uppercase text-sm font-medium opacity-90">{label}</p>
-            <p className="mt-4 text-3xl font-bold">{value}</p>
-          </div>
-        ))}
+     
+      <div
+        className={`flex flex-col w-full min-h-screen transition-all duration-300 ${
+          sidebarOpen ? "ml-64" : "ml-0"
+        }`}
+      >
+        
+        <SellerHeader
+          user={session?.user}
+          onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
+        />
+
+        
+        <main className="flex-1 overflow-y-auto">
+          <DashboardMain data={dashboardData} />
+        </main>
+
+        
+        <SellerFooter />
       </div>
-
-      {/* Performance Chart */}
-      <section className="bg-white shadow-lg rounded-2xl p-6">
-        <h2 className="text-xl font-semibold mb-4">Weekly Revenue</h2>
-        <div className="w-full" style={{ height: 260 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={salesData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="_id" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="revenue" stroke="#10B981" strokeWidth={3} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </section>
     </div>
   );
 }

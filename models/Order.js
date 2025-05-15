@@ -55,7 +55,7 @@ const OrderSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Create indexes for better performance
+
 OrderSchema.index({ userId: 1 });
 OrderSchema.index({ sellerId: 1 });
 OrderSchema.index({ status: 1 });

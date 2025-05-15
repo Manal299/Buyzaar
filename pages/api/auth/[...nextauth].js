@@ -17,27 +17,27 @@ export const authOptions = {
         try {
           await connectToDatabase();
           
-          // Find user by email
+          
           const user = await User.findOne({ email: credentials.email }).select('+password');
           
           if (!user) {
             throw new Error('No user found with this email');
           }
           
-          // Check password
+         
           const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
           
           if (!isPasswordValid) {
             throw new Error('Invalid password');
           }
           
-          // If user is a seller, get seller data
+          
           let sellerData = null;
           if (user.role === 'seller') {
             sellerData = await Seller.findOne({ userId: user._id });
           }
           
-          // Return user without password
+        
           return {
             id: user._id.toString(),
             name: user.name,
@@ -57,7 +57,7 @@ export const authOptions = {
   ],
   callbacks: {
     async jwt({ token, user }) {
-      // Add user data to token when signing in
+     
       if (user) {
         token.id = user.id;
         token.role = user.role;
@@ -68,7 +68,7 @@ export const authOptions = {
       return token;
     },
     async session({ session, token }) {
-      // Add custom user data to session
+      
       if (token) {
         session.user.id = token.id;
         session.user.role = token.role;
@@ -82,12 +82,12 @@ export const authOptions = {
   pages: {
     signIn: '/login',
     signOut: '/logout',
-    error: '/login', // Error code passed in query string as ?error=
-    newUser: '/seller/onboarding' // New users will be directed here on first sign in
+    error: '/login', 
+    newUser: '/seller/onboarding' 
   },
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 30 * 24 * 60 * 60,
   },
   secret: process.env.NEXTAUTH_SECRET || 'your-secret-key-should-be-in-env-for-production',
   debug: process.env.NODE_ENV === 'development',

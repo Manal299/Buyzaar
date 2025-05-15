@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 
-// Create the auth context
+
 const AuthContext = createContext({
   user: null,
   loading: true,
@@ -11,7 +11,7 @@ const AuthContext = createContext({
   error: null,
 });
 
-// Auth provider component
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -19,7 +19,6 @@ export function AuthProvider({ children }) {
   const authChecked = useRef(false);
   const router = useRouter();
 
-  // Load user from API on mount - only once
   useEffect(() => {
     // Prevent multiple auth checks
     if (authChecked.current) return;
@@ -190,12 +189,10 @@ export function AuthProvider({ children }) {
       await fetch('/api/auth/logout', {
         method: 'POST',
       });
-      
-      // Clear the user from state
+  
       setUser(null);
       authChecked.current = false;
-      
-      // Redirect to home page
+    
       router.push('/');
       
       return { success: true };
@@ -208,7 +205,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Context value
+ 
   const value = {
     user,
     loading,
@@ -221,7 +218,7 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-// Custom hook to use the auth context
+
 export function useAuth() {
   return useContext(AuthContext);
 }

@@ -1,7 +1,7 @@
 import connectToDatabase from '../../../lib/mongoose';
 import Category from '../../../models/Category';
 
-// Categories data for initial seeding
+
 const categoriesData = {
   "Electronic Accessories": ["Mobile Accessories", "Wearable", "Computer Accessories"],
   "TV & Home Appliances": ["Smart TVs", "Refrigerators", "Washing Machines"],

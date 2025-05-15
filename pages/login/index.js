@@ -1,4 +1,5 @@
 "use client";
+
 import Head from "next/head";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -13,53 +14,32 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Get error from URL if redirected from NextAuth
-  useEffect(() => {
-    if (router.query.error) {
-      setError(
-        router.query.error === 'CredentialsSignin'
-          ? 'Invalid email or password'
-          : router.query.error
-      );
-    }
-  }, [router.query]);
-
   useEffect(() => {
     if (status === 'authenticated') {
       if (session.user.role === 'seller' && session.user.status === 'pending') {
-        // Show a notification for pending status
         alert('Your request is pending. Please wait for approval.');
-        return; // Prevent further redirection
+        return;
       }
-      
-      let redirectPath;
       if (session.user.role === 'seller') {
-        // Redirect to seller's dashboard by ID
         fetchSellerIdAndRedirect();
       } else if (session.user.role === 'admin') {
-        redirectPath = '/admin/dashboard';
-        window.location.href = redirectPath;
+        window.location.href = '/admin';
       } else {
-        redirectPath = '/';
-        window.location.href = redirectPath;
+        window.location.href = '/';
       }
     }
-  }, [session, status, router]);
+  }, [session, status]);
 
-  // Add this function to fetch the seller ID and redirect
   const fetchSellerIdAndRedirect = async () => {
     try {
       const response = await fetch('/api/auth/me');
       const data = await response.json();
-      
       if (data.success && data.user.id) {
         window.location.href = `/seller/${data.user.id}/dashboard`;
       } else {
-        console.error('Failed to fetch user ID:', data.error);
         window.location.href = '/';
       }
-    } catch (error) {
-      console.error('Error fetching user data:', error);
+    } catch {
       window.location.href = '/';
     }
   };
@@ -77,17 +57,22 @@ export default function LoginPage() {
       });
 
       if (result.error) {
-        setError(result.error || 'Login failed');
-      } 
-      // Don't redirect here - the useEffect will handle it once session updates
-    } catch (err) {
+        const msg = result.error.toLowerCase();
+        if (msg.includes('password')) {
+          setError("Incorrect password.");
+        } else if (msg.includes('no user')) {
+          setError("No account found with this email.");
+        } else {
+          setError("Invalid email or password.");
+        }
+      }
+    } catch {
       setError('An error occurred. Please try again.');
     } finally {
       setSubmitting(false);
     }
   }
 
-  // Show loading while checking auth status
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -96,7 +81,6 @@ export default function LoginPage() {
     );
   }
 
-  // Show login form if not authenticated
   return (
     <>
       <Head>
@@ -105,14 +89,11 @@ export default function LoginPage() {
 
       <div className="min-h-screen bg-white text-gray-900 flex items-center justify-center px-4">
         <div className="w-full max-w-5xl">
-          {/* Buyzaar Heading */}
           <Link href="/">
             <h1 className="text-3xl font-bold text-center mb-3">Buyzaar</h1>
           </Link>
 
-          {/* Login Card */}
           <div className="flex w-full shadow-lg rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
-            {/* Left: Login Form */}
             <div className="w-full md:w-1/2 p-10">
               <h2 className="text-3xl font-bold mb-2">Welcome back</h2>
               <p className="text-sm mb-6 text-gray-600">
@@ -181,7 +162,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Right: Illustration */}
             <div className="hidden md:flex w-1/2 bg-white items-center justify-center p-10">
               <img
                 src="/login-illustration.png"
@@ -195,4 +175,3 @@ export default function LoginPage() {
     </>
   );
 }
-
